@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.eclipse.ee4j</groupId>
         <artifactId>project</artifactId>
-        <version>1.0.9</version>
+        <version>2.0.3</version>
         <relativePath />
     </parent>
 
@@ -41,7 +41,7 @@
         <tck.home>${project.build.directory}</tck.home>
 
         <glassfish.home>${project.build.directory}/glassfish8</glassfish.home>
-        <glassfish.version>8.0.0</glassfish.version>
+        <glassfish.version>8.0.2</glassfish.version>
         <glassfish.asadmin>${glassfish.home}/glassfish/bin/asadmin</glassfish.asadmin>
 
         <jacoco.includes>org/glassfish/**\:com/sun/enterprise/**</jacoco.includes>

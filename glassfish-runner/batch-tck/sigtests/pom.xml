@@ -13,7 +13,7 @@
 
     <properties>
         <glassfish.toplevel.dir>glassfish8</glassfish.toplevel.dir>
-        <glassfish.version>8.0.0</glassfish.version>
+        <glassfish.version>8.0.2</glassfish.version>
         <glassfish.home>${project.build.directory}/${glassfish.toplevel.dir}</glassfish.home>
         <jakarta.batch.version>2.1.5</jakarta.batch.version>
     </properties>
