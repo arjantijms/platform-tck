@@ -34,7 +34,7 @@
     <properties>
         <!--glassfish properties-->
         <jakarta.ee.version>11.0.0-RC4</jakarta.ee.version>
-        <glassfish.version>8.0.0-M2</glassfish.version>
+        <glassfish.version>8.0.2-M2</glassfish.version>
         <glassfish.toplevel.dir>${project.build.directory}/glassfish8</glassfish.toplevel.dir>
         <glassfish.module.dir>${glassfish.toplevel.dir}/glassfish/modules</glassfish.module.dir>
         <exec.asadmin>${glassfish.toplevel.dir}/bin/asadmin</exec.asadmin>

@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.eclipse.ee4j</groupId>
         <artifactId>project</artifactId>
-        <version>1.0.9</version>
+        <version>2.0.3</version>
         <relativePath />
     </parent>
 
@@ -36,12 +36,11 @@
         <glassfish.home>${glassfish.root}/glassfish${glassfish.version.main}</glassfish.home>
         <glassfish.root>${project.build.directory}</glassfish.root>
         <glassfish.lib.dir>${glassfish.home}/glassfish/lib</glassfish.lib.dir>
-        <glassfish.version>8.0.0</glassfish.version>
+        <glassfish.version>8.0.2</glassfish.version>
         <glassfish.version.main>8</glassfish.version.main>
-        <glassfish.runner.version>11.0.2</glassfish.runner.version>
+        <glassfish.runner.version>11.0.3</glassfish.runner.version>
 
-        <!-- Require at least Java 17 to compile -->
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
 
         <jakarta.data.version>1.0.0</jakarta.data.version>
 

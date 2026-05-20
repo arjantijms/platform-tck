@@ -22,22 +22,22 @@
     <parent>
         <groupId>org.eclipse.ee4j</groupId>
         <artifactId>project</artifactId>
-        <version>1.0.9</version>
+        <version>2.0.3</version>
         <relativePath />
     </parent>
 
     <groupId>jakarta.tck</groupId>
     <artifactId>mail-tck-install</artifactId>
-    <version>11.0.2</version>
+    <version>11.0.3</version>
     <packaging>pom</packaging>
 
     <name>TCK: Install Jakarta Mail TCK</name>
 
     <properties>
-        <tck.test.mail.file>jakartaeetck-${tck.test.mail.version}-dist.zip</tck.test.mail.file>
+        <tck.test.mail.file>jakartaeetck-${tck.test.mail.version}.zip</tck.test.mail.file>
         <tck.test.mail.url>https://download.eclipse.org/ee4j/jakartaee-platform/jakartaee11/staged/eftl/${tck.test.mail.file}</tck.test.mail.url>
         
-        <tck.test.mail.version>11.0.2</tck.test.mail.version>
+        <tck.test.mail.version>11.0.3</tck.test.mail.version>
     </properties>
 
     <build>

@@ -33,7 +33,7 @@
             GlassFish properties 
             
         -->
-        <glassfish.version>8.0.0-JDK17-M7</glassfish.version>
+        <glassfish.version>8.0.2</glassfish.version>
         <glassfish.toplevel.dir>glassfish8</glassfish.toplevel.dir>
     </properties>
 
@@ -53,8 +53,8 @@
         <!-- Jakarta Expression Language TCK -->
         <dependency>
             <groupId>jakarta.tck</groupId>
-            <artifactId>jakarta-expression-language-tck</artifactId>
-            <version>6.0.2-SNAPSHOT</version>
+            <artifactId>expression-language-tck</artifactId>
+            <version>6.0.1</version>
             <scope>test</scope>
             <!-- Specially exclude el-api. Otherwise the test will test that one instead of the GF provided one.  -->
             <exclusions>
@@ -124,7 +124,7 @@
                                 <additionalClasspathElement>${project.build.directory}/${glassfish.toplevel.dir}/glassfish/modules/expressly.jar</additionalClasspathElement>
                             </additionalClasspathElements>
 
-                            <dependenciesToScan>jakarta.tck:jakarta-expression-language-tck</dependenciesToScan>
+                            <dependenciesToScan>jakarta.tck:expression-language-tck</dependenciesToScan>
 
                             <systemPropertyVariables>
                                 <el.classes>${project.build.directory}/${glassfish.toplevel.dir}/glassfish/modules/jakarta.el-api.jar:${project.build.directory}/${glassfish.toplevel.dir}/glassfish/modules/expressly.jar</el.classes>

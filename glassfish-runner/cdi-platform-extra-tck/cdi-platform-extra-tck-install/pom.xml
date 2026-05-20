@@ -22,7 +22,7 @@
    <parent>
         <groupId>org.eclipse.ee4j</groupId>
         <artifactId>project</artifactId>
-        <version>1.0.9</version>
+        <version>2.0.3</version>
         <relativePath />
     </parent>
 
@@ -33,10 +33,10 @@
    <name>TCK: Install Jakarta cdi Platform Extra TCK</name>
 
    <properties>
-        <tck.test.cdi-extra.file>jakartaeetck-${tck.test.cdi-extra.version}-dist.zip</tck.test.cdi-extra.file>
+        <tck.test.cdi-extra.file>jakartaeetck-${tck.test.cdi-extra.version}.zip</tck.test.cdi-extra.file>
         <tck.test.cdi-extra.url>https://download.eclipse.org/ee4j/jakartaee-platform/jakartaee11/staged/eftl/${tck.test.cdi-extra.file}</tck.test.cdi-extra.url>
 
-        <tck.test.cdi-extra.version>11.0.2</tck.test.cdi-extra.version>
+        <tck.test.cdi-extra.version>11.0.3</tck.test.cdi-extra.version>
     </properties>
 
    <build>

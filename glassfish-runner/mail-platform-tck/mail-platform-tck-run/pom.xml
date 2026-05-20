@@ -27,7 +27,7 @@
     
     Run with e.g.
     
-    mvn clean install -Pfull,mailserver-docker -Dglassfish.version=8.0.0-SNAPSHOT    
+    mvn clean install -Pfull,mailserver-docker -Dglassfish.version=8.0.2-SNAPSHOT    
     
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -36,24 +36,24 @@
     <parent>
         <groupId>org.eclipse.ee4j</groupId>
         <artifactId>project</artifactId>
-        <version>1.0.9</version>
+        <version>2.0.3</version>
         <relativePath />
     </parent>
 
     <groupId>jakarta</groupId>
     <artifactId>glassfish.mail-platform-tck-run</artifactId>
-    <version>11.0.2</version>
+    <version>11.0.3</version>
 
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
     
         <glassfish.home>${project.build.directory}/glassfish8</glassfish.home>
         <glassfish.lib.dir>${glassfish.home}/glassfish/lib</glassfish.lib.dir>
         <glassfish.module.dir>${glassfish.home}/glassfish/modules</glassfish.module.dir>
         
-        <glassfish.version>8.0.0</glassfish.version>
-        <glassfish.runner.version>11.0.2</glassfish.runner.version>
-        <tck.version>11.0.2</tck.version>
+        <glassfish.version>8.0.2</glassfish.version>
+        <glassfish.runner.version>11.0.3</glassfish.runner.version>
+        <tck.version>11.0.3</tck.version>
         
         <destinationURL>imap://${escaped.javamail.username}:${javamail.password}@${javamail.server}:${imap.port}</destinationURL>
         <escaped.javamail.username>user01%40james.local</escaped.javamail.username>
@@ -431,7 +431,7 @@
                     <plugin>
                         <groupId>io.fabric8</groupId>
                         <artifactId>docker-maven-plugin</artifactId>
-                        <version>0.44.0</version>
+                        <version>0.48.1</version>
                         <configuration>
                             <!-- optional: mimic k8s Always -->
                             <imagePullPolicy>Always</imagePullPolicy>

@@ -22,7 +22,7 @@
    <parent>
         <groupId>org.eclipse.ee4j</groupId>
         <artifactId>project</artifactId>
-        <version>1.0.9</version>
+        <version>2.0.3</version>
         <relativePath />
     </parent>
 
@@ -32,9 +32,9 @@
    <name>TCK: Install Jakarta persistence Platform Tests</name>
 
    <properties>
-        <tck.test.persistence.file>jakartaeetck-${tck.test.persistence.version}-dist.zip</tck.test.persistence.file>
+        <tck.test.persistence.file>jakartaeetck-${tck.test.persistence.version}.zip</tck.test.persistence.file>
         <tck.test.persistence.url>https://download.eclipse.org/ee4j/jakartaee-platform/jakartaee11/staged/eftl/${tck.test.persistence.file}</tck.test.persistence.url>
-        <tck.test.persistence.version>11.0.2</tck.test.persistence.version>
+        <tck.test.persistence.version>11.0.3</tck.test.persistence.version>
     </properties>
 
    <build>

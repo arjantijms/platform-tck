@@ -23,13 +23,13 @@
     <parent>
         <groupId>org.eclipse.ee4j</groupId>
         <artifactId>project</artifactId>
-        <version>1.0.9</version>
+        <version>2.0.3</version>
         <relativePath />
     </parent>
 
     <groupId>jakarta.tck</groupId>
     <artifactId>glassfish.connector-platform-tck</artifactId>
-    <version>11.0.2</version>
+    <version>11.0.3</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -40,8 +40,8 @@
         <glassfish.home>${project.build.directory}/glassfish${glassfish.major}</glassfish.home>
         <glassfish.lib.dir>${glassfish.home}/glassfish/lib</glassfish.lib.dir>
         
-        <glassfish.runner.version>11.0.2</glassfish.runner.version>
-        <tck.version>11.0.2</tck.version>
+        <glassfish.runner.version>11.0.3</glassfish.runner.version>
+        <tck.version>11.0.3</tck.version>
 
         <whitebox.directory>target/whiteboxes</whitebox.directory>
     </properties>
