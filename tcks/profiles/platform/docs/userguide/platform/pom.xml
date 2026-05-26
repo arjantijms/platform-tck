@@ -21,7 +21,7 @@
     <parent>
         <groupId>jakarta.tck</groupId>
         <artifactId>jakarta.tck-user-guide-parent</artifactId>
-        <version>11.0.3</version>
+        <version>11.0.4-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
