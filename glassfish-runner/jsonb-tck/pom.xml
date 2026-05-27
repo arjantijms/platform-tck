@@ -21,13 +21,15 @@
         <glassfish.home>${project.build.directory}/${glassfish.toplevel.dir}</glassfish.home>
         <glassfish.toplevel.dir>glassfish8</glassfish.toplevel.dir>
         <glassfish.version>8.0.2</glassfish.version>
+        <tck.version>3.0.0</tck.version>
+        
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>jakarta.json.bind</groupId>
             <artifactId>jakarta.json.bind-tck</artifactId>
-            <version>3.0.0</version>
+            <version>${tck.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
