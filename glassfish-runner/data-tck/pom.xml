@@ -42,7 +42,7 @@
         <glassfish.version.main>8</glassfish.version.main>
         <glassfish.runner.version>11.0.3</glassfish.runner.version>
         
-        <tck.version>1.0.0</tck.version>
+        <tck.version>1.0.1</tck.version>
 
         <sigtest.version>2.3</sigtest.version>
         <weld.version>6.0.3.Final</weld.version>
