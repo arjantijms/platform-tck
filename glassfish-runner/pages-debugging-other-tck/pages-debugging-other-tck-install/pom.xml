@@ -33,8 +33,9 @@
    <name>TCK: Install Jakarta pages-debugging-other TCK</name>
 
    <properties>
-        <tck.test.pages.file>jakarta-debugging-tck-2.0.0.zip</tck.test.pages.file>
-        <tck.test.pages.url>https://download.eclipse.org/jakartaee/debugging/2.0/${tck.test.pages.file}</tck.test.pages.url>
+        <tck.test.pages.debug.version>2.0.0</tck.test.pages.debug.version>
+        <tck.test.pages.debug.file>jakarta-debugging-tck-${tck.test.pages.debug.version}.zip</tck.test.pages.debug.file>
+        <tck.test.pages.debug.url>https://download.eclipse.org/jakartaee/debugging/2.0/${tck.test.pages.file}</tck.test.pages.debug.url>
     </properties>
 
    <build>
@@ -55,7 +56,7 @@
                 <configuration>
                     <skipCache>true</skipCache>
                     <overwrite>true</overwrite>
-                    <url>${tck.test.pages.url}</url>
+                    <url>${tck.test.pages.debug.url}</url>
                     <unpack>false</unpack>
                     <outputDirectory>${project.build.directory}</outputDirectory>
                 </configuration>
@@ -72,7 +73,7 @@
                             <goal>install-file</goal>
                         </goals>
                         <configuration>
-                            <file>${project.build.directory}/${tck.test.pages.file}</file>
+                            <file>${project.build.directory}/${tck.test.pages.debug.file}</file>
                             <groupId>jakarta.tck</groupId>
                             <artifactId>jakarta-pages-debugging-other-tck</artifactId>
                             <version>2.0.0</version>
