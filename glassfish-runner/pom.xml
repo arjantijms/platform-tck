@@ -61,6 +61,7 @@
         
         <module>platform/appclient-platform-tck</module>
         <module>platform/assembly-tck</module>
+        <module>platform/core-tck</module>
         <module>platform/integration-platform-tck</module>
         <module>platform/javaee-module-tck</module>
         <module>platform/jdbc-platform-tck</module>
