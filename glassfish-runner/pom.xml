@@ -31,9 +31,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <!-- 
         <module>annotations-tck</module>
-        -->
         <module>batch-tck</module>
         <module>cdi-model-tck</module>
         <module>cdi-platform-extra-tck</module>
