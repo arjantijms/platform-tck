@@ -87,62 +87,10 @@
             <artifactId>arquillian-junit5-container</artifactId>
             <scope>test</scope>
         </dependency>
-        
-        
-        <!-- The Arquillian connector that starts GlassFish and deploys 
-                archives to it. -->
-        <dependency>
-            <groupId>ee.omnifish.arquillian</groupId>
-            <artifactId>arquillian-glassfish-server-managed</artifactId>
-            <version>2.2.0</version>
-            <scope>test</scope>
-        </dependency>
-        
-        <dependency>
-            <groupId>ee.omnifish.arquillian</groupId>
-            <artifactId>glassfish-client-ee11</artifactId>
-            <version>2.2.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-httpclient</groupId>
-            <artifactId>commons-httpclient</artifactId>
-            <version>3.1</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
     
     <build>
         <plugins>
-            <!-- Install GlassFish -->
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.8.1</version>
-                <executions>
-                    <execution>
-                        <id>unpack-glassfish-and-certs</id>
-                        <goals>
-                            <goal>unpack</goal>
-                        </goals>
-                        <phase>generate-test-resources</phase>
-                        <configuration>
-                            <markersDirectory>${glassfish.root}/dependency-maven-plugin-markers</markersDirectory>
-                            <artifactItems>
-                                <!-- Extract GlassFish -->
-                                <artifactItem>
-                                    <groupId>org.glassfish.main.distributions</groupId>
-                                    <artifactId>glassfish</artifactId>
-                                    <version>${glassfish.version}</version>
-                                    <type>zip</type>
-                                    <overWrite>false</overWrite>
-                                    <outputDirectory>${glassfish.root}</outputDirectory>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>3.5.6</version>
@@ -156,15 +104,124 @@
                     </execution>
                 </executions>
                 <configuration>
+                
                     <dependenciesToScan>
                         <dependency>jakarta.tck.coreprofile:core-profile-tck-impl</dependency>
                     </dependenciesToScan>
-
-                    <systemProperties>
-                        <glassfish.home>${glassfish.root}/glassfish8</glassfish.home>
-                    </systemProperties>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+    
+    <profiles>
+        <profile>
+            <id>server</id>
+            <activation>
+                <property>
+                    <name>!glassfish.distribution</name>
+                </property>
+            </activation>
+            
+            <dependencies>
+                <!-- The Arquillian connector that starts GlassFish and deploys archives to it. -->
+                <dependency>
+                    <groupId>ee.omnifish.arquillian</groupId>
+                    <artifactId>arquillian-glassfish-server-managed</artifactId>
+                    <version>2.2.0</version>
+                    <scope>test</scope>
+                </dependency>
+                
+                <dependency>
+                    <groupId>ee.omnifish.arquillian</groupId>
+                    <artifactId>glassfish-client-ee11</artifactId>
+                    <version>2.2.0</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            
+            <build>
+                <plugins>
+                    <!-- Install GlassFish -->
+                    <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.8.1</version>
+                        <executions>
+                            <execution>
+                                <id>unpack-glassfish-and-certs</id>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <phase>generate-test-resources</phase>
+                                <configuration>
+                                    <markersDirectory>${glassfish.root}/dependency-maven-plugin-markers</markersDirectory>
+                                    <artifactItems>
+                                        <!-- Extract GlassFish -->
+                                        <artifactItem>
+                                            <groupId>org.glassfish.main.distributions</groupId>
+                                            <artifactId>glassfish</artifactId>
+                                            <version>${glassfish.version}</version>
+                                            <type>zip</type>
+                                            <overWrite>false</overWrite>
+                                            <outputDirectory>${glassfish.root}</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <systemProperties>
+                                <glassfish.home>${glassfish.root}/glassfish8</glassfish.home>
+                            </systemProperties>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
+        <profile>
+            <id>embedded</id>
+            <activation>
+                <property>
+                    <name>glassfish.distribution</name>
+                    <value>embedded</value>
+                </property>
+            </activation>
+            
+            <dependencies>
+                <!-- The Arquillian connector that starts GlassFish and deploys archives to it. -->
+                <dependency>
+                    <groupId>ee.omnifish.arquillian</groupId>
+                    <artifactId>arquillian-glassfish-server-embedded</artifactId>
+                    <version>2.2.0</version>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.glassfish.main.extras</groupId>
+                    <artifactId>glassfish-embedded-all</artifactId>
+                    <version>${glassfish.version}</version>
+                </dependency>
+            </dependencies>
+            
+            <build>
+                <plugins>
+                    
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <argLine>
+                                --add-opens java.base/java.lang=ALL-UNNAMED 
+                                --add-opens java.naming/javax.naming.spi=ALL-UNNAMED
+                            </argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    
+    </profiles>
 </project>
