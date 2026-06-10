@@ -58,7 +58,7 @@ import org.xml.sax.InputSource;
 
 public class JenkinsTckCertificationWorkflow {
 
-    private static final String VERSION = "2026-06-02-integrated-discover-inventory-report";
+    private static final String VERSION = "2026-06-10-ccr-single-java-runtime-line";
 
     private static final String DEFAULT_OVERVIEW_TREE = String.join(",",
             "name",
@@ -85,6 +85,7 @@ public class JenkinsTckCertificationWorkflow {
     private static final List<String> DEFAULT_EXCLUDED_PLATFORM_JOB_PREFIXES = List.of("persistence/se-ee-");
 
     private static final List<AdditionalTckRequirement> ADDITIONAL_TCK_REQUIREMENTS = List.of(
+            new AdditionalTckRequirement("jakarta-annotations-tck-glassfish", "Jakarta Annotations 3.0 TCK"),
             new AdditionalTckRequirement("jakarta-authentication-tck-glassfish", "Jakarta Authentication 3.1 TCK"),
             new AdditionalTckRequirement("jakarta-cdi", "Jakarta Contexts and Dependency Injection 4.1 TCK"),
             new AdditionalTckRequirement("jakarta-concurrency-tck-glassfish", "Jakarta Concurrency 3.1 TCK"),
@@ -145,10 +146,10 @@ public class JenkinsTckCertificationWorkflow {
             System.out.println("Skipping inventory; using existing " + arguments.inventoryJsonOut);
         }
 
-        if (!arguments.skipReport) {
+        if (!arguments.skipReport || !arguments.skipCcr) {
             renderReport(arguments, http);
         } else {
-            System.out.println("Skipping report generation");
+            System.out.println("Skipping report and CCR generation");
         }
     }
 
@@ -162,12 +163,13 @@ public class JenkinsTckCertificationWorkflow {
 
         StringBuilder markdown = new StringBuilder();
         List<String> warnings = new ArrayList<>();
+        ReportMetadata metadata;
 
         try (ArtifactFetchPool fetchPool = new ArtifactFetchPool(arguments.fetchThreads)) {
             prefetchPlatformArtifacts(fetchPool, http, platformJobs);
             prefetchComponentSummaries(fetchPool, http, componentGroups);
 
-            ReportMetadata metadata = collectReportMetadata(fetchPool, http, platformJobs, componentGroups);
+            metadata = collectReportMetadata(fetchPool, http, platformJobs, componentGroups);
             printProductRuntimeDebug(metadata);
             printEnvironmentMetadataDebug(metadata);
 
@@ -193,9 +195,20 @@ public class JenkinsTckCertificationWorkflow {
             }
         }
 
-        Files.writeString(Path.of(arguments.reportOut), markdown.toString(), StandardCharsets.UTF_8);
+        if (!arguments.skipReport) {
+            Files.writeString(Path.of(arguments.reportOut), markdown.toString(), StandardCharsets.UTF_8);
+            System.out.println("Wrote " + arguments.reportOut);
+        } else {
+            System.out.println("Skipping report generation");
+        }
+        if (!arguments.skipCcr) {
+            String ccr = renderCompatibilityCertificationRequest(metadata, arguments);
+            Files.writeString(Path.of(arguments.ccrOut), ccr, StandardCharsets.UTF_8);
+            System.out.println("Wrote " + arguments.ccrOut);
+        } else {
+            System.out.println("Skipping CCR generation");
+        }
 
-        System.out.println("Wrote " + arguments.reportOut);
         System.out.println("TCK folder: " + arguments.tckFolder);
         System.out.println("Platform folder: " + arguments.platformFolder);
         System.out.println("Platform jobs generated: " + (arguments.skipPlatform ? 0 : platformJobs.size()));
@@ -743,10 +756,21 @@ public class JenkinsTckCertificationWorkflow {
         markdown.append("  [Eclipse Foundation](https://eclipse.org) <br/><br/>").append(NL);
 
         markdown.append("- [X] Product Name, Version and download URL (if applicable):").append(NL);
-        markdown.append("   Eclipse GlassFish").append(NL);
         if (metadata.productRuntimesByKey.isEmpty()) {
-            markdown.append("     - UNKNOWN <br/><br/>").append(NL);
+            markdown.append("   - Eclipse GlassFish UNKNOWN <br/><br/>").append(NL);
+        } else if (metadata.productRuntimesByKey.size() == 1) {
+            ProductRuntime runtime = metadata.productRuntimesByKey.values().iterator().next();
+            String version = glassFishVersionFromDownloadLink(runtime.glassFishDownloadLink());
+            markdown.append("   - Eclipse GlassFish ")
+                    .append(version == null || version.isBlank() ? "UNKNOWN" : version)
+                    .append(" - [").append(glassFishDownloadLabel(runtime.glassFishDownloadLink())).append("](")
+                    .append(runtime.glassFishDownloadLink()).append(")");
+            if (runtime.glassFishSha() != null && !runtime.glassFishSha().isBlank()) {
+                markdown.append(", SHA-256: `").append(runtime.glassFishSha()).append('`');
+            }
+            markdown.append(" <br/><br/>").append(NL);
         } else {
+            markdown.append("   Eclipse GlassFish").append(NL);
             for (ProductRuntime runtime : metadata.productRuntimesByKey.values()) {
                 markdown.append("     - JDK ")
                         .append(runtime.jdkVersion().isBlank() ? "UNKNOWN" : runtime.jdkVersion())
@@ -770,8 +794,8 @@ public class JenkinsTckCertificationWorkflow {
 
         String publicResultVersion = productVersion == null || productVersion.isBlank() ? "UNKNOWN" : productVersion;
         markdown.append("- [X] Public URL of TCK Results Summary:").append(NL);
-        markdown.append("  [Eclipse GlassFish Platform ").append(publicResultVersion).append(" TCK Results](./TCK-Results-")
-                .append(publicResultVersion)
+        markdown.append("  [Eclipse GlassFish Platform ").append(publicResultVersion).append(" TCK Results](")
+                .append(glassFishCertificationResultsUrl(publicResultVersion))
                 .append(") <br/><br/>")
                 .append(NL).append(NL);
 
@@ -806,6 +830,8 @@ public class JenkinsTckCertificationWorkflow {
         markdown.append("- [X] Java runtime used to run the implementation:<br/>").append(NL);
         if (metadata.javaVersions.isEmpty()) {
             markdown.append("  - UNKNOWN<br/><br/>").append(NL);
+        } else if (metadata.javaVersions.size() == 1) {
+            markdown.append("  - `").append(metadata.javaVersions.iterator().next()).append("`").append(NL).append(NL);
         } else {
             int index = 1;
             for (String javaVersion : metadata.javaVersions) {
@@ -831,6 +857,123 @@ public class JenkinsTckCertificationWorkflow {
             }
             markdown.append(NL);
         }
+    }
+
+    private static String renderCompatibilityCertificationRequest(ReportMetadata metadata, Arguments arguments) {
+        StringBuilder markdown = new StringBuilder();
+        String productVersion = metadata.productVersion();
+        String publicResultVersion = productVersion == null || productVersion.isBlank() ? "UNKNOWN" : productVersion;
+        PlatformTckMetadata platformTck = metadata.platformTckMetadataOrDefault(arguments);
+
+        markdown.append("- [x] Organization Name (\"Organization\") and, if applicable, URL:<br/>").append(NL);
+        markdown.append("  [Eclipse Foundation](https://eclipse.org)").append(NL);
+
+        markdown.append("- [x] Product Name, Version and download URL (if applicable):<br/>").append(NL);
+        if (metadata.productRuntimesByKey.isEmpty()) {
+            markdown.append("  Eclipse GlassFish, UNKNOWN").append(NL);
+        } else {
+            for (ProductRuntime runtime : metadata.productRuntimesByKey.values()) {
+                String version = glassFishVersionFromDownloadLink(runtime.glassFishDownloadLink());
+                markdown.append("  [Eclipse GlassFish, ")
+                        .append(version == null || version.isBlank() ? "UNKNOWN" : version)
+                        .append("](").append(runtime.glassFishDownloadLink()).append(")");
+                if (runtime.glassFishSha() != null && !runtime.glassFishSha().isBlank()) {
+                    markdown.append(", SHA-256: `").append(runtime.glassFishSha()).append('`');
+                }
+                markdown.append(NL);
+            }
+        }
+
+        markdown.append("- [x] Specification Name, Version and download URL:<br/>").append(NL);
+        markdown.append("  [Jakarta EE Platform, ")
+                .append(platformSpecificationDisplayVersion(arguments.platformVersion))
+                .append("](https://jakarta.ee/specifications/platform/")
+                .append(platformSpecificationUrlVersion(arguments.platformVersion))
+                .append(")").append(NL);
+
+        markdown.append("- [x] TCK Version, digital SHA-256 fingerprint and download URL:<br/>").append(NL);
+        markdown.append("  [Jakarta EE Platform TCK ").append(platformTck.tckVersion()).append("](")
+                .append(platformTck.tckDownloadLink()).append("),  ").append(NL);
+        markdown.append("  `").append(platformTck.tckSha()).append('`').append(NL);
+
+        markdown.append("- [x] Public URL of TCK Results Summary:<br/>").append(NL);
+        markdown.append("  [Eclipse GlassFish Platform ").append(publicResultVersion)
+                .append(" TCK Results](").append(glassFishCertificationResultsUrl(publicResultVersion)).append(")").append(NL);
+
+        markdown.append("- [x] Any Additional Specification Certification Requirements:<br/>").append(NL);
+        for (AdditionalTckRequirement requirement : ADDITIONAL_TCK_REQUIREMENTS) {
+            ComponentTckMetadata component = metadata.componentTckMetadataByKey.get(requirement.componentKey());
+            String downloadLink = component == null || component.tckDownloadLink() == null || component.tckDownloadLink().isBlank()
+                    ? "UNKNOWN" : component.tckDownloadLink();
+            String bundleName = component == null || component.tckBundleName() == null || component.tckBundleName().isBlank()
+                    ? downloadFileName(downloadLink) : component.tckBundleName();
+            String sha = component == null || component.tckSha() == null || component.tckSha().isBlank()
+                    ? "UNKNOWN" : component.tckSha();
+            markdown.append("  ").append(ccrRequirementLabel(requirement.label())).append(NL);
+            markdown.append("  [").append(bundleName == null || bundleName.isBlank() ? "UNKNOWN" : bundleName).append("](")
+                    .append(downloadLink).append("),").append(NL);
+            markdown.append("  `").append(sha).append('`').append(NL).append(NL);
+        }
+
+        markdown.append("- [x] Java runtime used to run the implementation:<br/>").append(NL);
+        if (metadata.javaVersions.isEmpty()) {
+            markdown.append("  UNKNOWN").append(NL);
+        } else if (metadata.javaVersions.size() == 1) {
+            markdown.append("  ").append(metadata.javaVersions.iterator().next()).append(NL);
+        } else {
+            int index = 1;
+            for (String javaVersion : metadata.javaVersions) {
+                markdown.append("  Java runtime ").append(index++).append(" used to run the implementation:").append(NL);
+                markdown.append("  ").append(javaVersion).append(NL).append(NL);
+            }
+        }
+
+        markdown.append("- [x] Summary of the information for the certification environment, operating system, cloud, ...:<br/>").append(NL);
+        if (metadata.osDetails.isEmpty()) {
+            markdown.append("  UNKNOWN").append(NL);
+        } else {
+            int index = 1;
+            for (String osDetails : metadata.osDetails) {
+                markdown.append("  Operating System ").append(index++).append(" used to run the implementation:").append(NL);
+                markdown.append("  ").append(osDetails).append(NL).append(NL);
+            }
+        }
+
+        markdown.append("- [x] By checking this box I acknowledge that the Organization I represent accepts the terms of the [EFTL](https://www.eclipse.org/legal/tck.php).").append(NL);
+        markdown.append("- [x] By checking this box I attest that all TCK requirements have been met, including any compatibility rules.").append(NL).append(NL);
+        markdown.append("# Task for Copilot").append(NL).append(NL);
+        markdown.append("## Instructions").append(NL);
+        markdown.append("Follow these repository-wide rules when working on this issue: https://github.com/jakartaee/platform/wiki/Compatibility_Certification_Request_CCR_Review_Guidance").append(NL);
+        return markdown.toString();
+    }
+
+    private static String ccrRequirementLabel(String reportLabel) {
+        if (reportLabel == null || reportLabel.isBlank()) {
+            return "UNKNOWN";
+        }
+        String label = reportLabel.replaceFirst("[ \\t]+[0-9][0-9.]*[ \\t]+TCK$", "")
+                .replaceFirst("[ \\t]+TCK$", "")
+                .strip();
+        return switch (label) {
+            case "Jakarta REST" -> "Jakarta RESTful Web Services";
+            default -> label;
+        };
+    }
+
+    private static String downloadFileName(String downloadLink) {
+        if (downloadLink == null || downloadLink.isBlank() || "UNKNOWN".equals(downloadLink)) {
+            return "UNKNOWN";
+        }
+        String normalized = downloadLink.strip();
+        int query = normalized.indexOf('?');
+        if (query >= 0) {
+            normalized = normalized.substring(0, query);
+        }
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        int slash = normalized.lastIndexOf('/');
+        return slash >= 0 ? normalized.substring(slash + 1) : normalized;
     }
 
     private static void appendTestCountsHeading(StringBuilder markdown, Arguments arguments) {
@@ -1083,7 +1226,11 @@ public class JenkinsTckCertificationWorkflow {
                 result.addPlatformTckMetadata(source, properties.get("TCK_VERSION"), properties.get("TCK_DOWNLOAD_LINK"),
                         properties.get("TCK_SHA"));
             } else if (componentKey != null && !componentKey.isBlank()) {
-                result.addComponentTckDownloadLink(componentKey, properties.get("TCK_DOWNLOAD_LINK"));
+                result.addComponentTckMetadata(componentKey,
+                        properties.get("TCK_VERSION"),
+                        properties.get("TCK_BUNDLE_NAME"),
+                        properties.get("TCK_DOWNLOAD_LINK"),
+                        properties.get("TCK_SHA"));
             }
         } catch (Exception e) {
             System.out.println("WARNING: could not collect metadata from " + build.fullName + " #" + build.buildNumber
@@ -1146,6 +1293,7 @@ public class JenkinsTckCertificationWorkflow {
         }
         return switch (name) {
             case "activation" -> "Jakarta Activation";
+            case "annotations" -> "Jakarta Annotations";
             case "authentication" -> "Jakarta Authentication";
             case "authorization" -> "Jakarta Authorization";
             case "batch" -> "Jakarta Batch";
@@ -1269,6 +1417,11 @@ public class JenkinsTckCertificationWorkflow {
         }
         int lastSpace = linkText.lastIndexOf(' ');
         return lastSpace >= 0 ? linkText.substring(lastSpace + 1).strip() : linkText.strip();
+    }
+
+    private static String glassFishCertificationResultsUrl(String productVersion) {
+        String version = productVersion == null || productVersion.isBlank() ? "UNKNOWN" : productVersion.strip();
+        return "https://glassfish.org/certifications/jakarta-platform/11/TCK-Results-" + version + ".html";
     }
 
     private static String glassFishVersionFromDownloadLink(String downloadLink) {
@@ -1527,6 +1680,7 @@ public class JenkinsTckCertificationWorkflow {
     private record ProductRuntimeKey(String jdkVersion, String glassFishDownloadLink) {}
     private record ProductRuntime(String jdkVersion, String glassFishDownloadLink, String glassFishSha) {}
     private record PlatformTckMetadata(String tckVersion, String tckDownloadLink, String tckSha) {}
+    private record ComponentTckMetadata(String tckVersion, String tckBundleName, String tckDownloadLink, String tckSha) {}
     private record PlatformRenderResult(String markdown, List<String> warnings) {}
     private record ComponentRenderResult(String markdown, List<String> warnings) {}
     private record Extraction(String snippet, String warning) {}
@@ -1552,6 +1706,7 @@ public class JenkinsTckCertificationWorkflow {
         final Map<String, List<String>> javaVersionSources = new LinkedHashMap<>();
         final Map<String, List<String>> osDetailsSources = new LinkedHashMap<>();
         final Map<String, String> componentTckDownloadLinksByKey = new LinkedHashMap<>();
+        final Map<String, ComponentTckMetadata> componentTckMetadataByKey = new LinkedHashMap<>();
         final Map<ProductRuntimeKey, ProductRuntime> productRuntimesByKey = new LinkedHashMap<>();
         final Map<ProductRuntime, List<String>> productRuntimeSources = new LinkedHashMap<>();
         String platformTckVersion, platformTckDownloadLink, platformTckSha, platformTckMetadataSource;
@@ -1559,10 +1714,15 @@ public class JenkinsTckCertificationWorkflow {
         void addJavaVersion(String source, String value) { addNormalized(javaVersions, javaVersionSources, source, value); }
         void addOsDetails(String source, String value) { addNormalized(osDetails, osDetailsSources, source, value); }
 
-        void addComponentTckDownloadLink(String componentKey, String tckDownloadLink) {
-            String normalized = normalizeMetadataValue(tckDownloadLink);
-            if (!componentKey.isBlank() && !normalized.isBlank()) {
-                componentTckDownloadLinksByKey.putIfAbsent(componentKey, normalized);
+        void addComponentTckMetadata(String componentKey, String tckVersion, String tckBundleName, String tckDownloadLink, String tckSha) {
+            String version = normalizeMetadataValue(tckVersion);
+            String bundle = normalizeMetadataValue(tckBundleName);
+            String link = normalizeMetadataValue(tckDownloadLink);
+            String sha = normalizeMetadataValue(tckSha);
+            if (!componentKey.isBlank() && !link.isBlank()) {
+                componentTckDownloadLinksByKey.putIfAbsent(componentKey, link);
+                componentTckMetadataByKey.putIfAbsent(componentKey,
+                        new ComponentTckMetadata(version, bundle, link, sha));
             }
         }
 
@@ -2137,6 +2297,7 @@ public class JenkinsTckCertificationWorkflow {
         String overviewJsonOut = "jenkins-tck-jobs-overview.json";
         String inventoryJsonOut = "jenkins-tck-result-inventory.json";
         String reportOut = "tck-report-sections.md";
+        String ccrOut = "ccr.md";
         String buildSelector = "lastCompletedBuild";
         String tckFolder = DEFAULT_TCK_FOLDER;
         String platformFolder = DEFAULT_PLATFORM_FOLDER;
@@ -2150,6 +2311,7 @@ public class JenkinsTckCertificationWorkflow {
         boolean skipDiscover;
         boolean skipInventory;
         boolean skipReport;
+        boolean skipCcr;
         boolean skipPlatform;
         boolean skipComponents;
         String platformTitle = DEFAULT_PLATFORM_TITLE;
@@ -2171,6 +2333,7 @@ public class JenkinsTckCertificationWorkflow {
             result.inventoryJsonOut = values.getOrDefault("--inventory", result.inventoryJsonOut);
             result.reportOut = values.getOrDefault("--report-out", result.reportOut);
             result.reportOut = values.getOrDefault("--out", result.reportOut);
+            result.ccrOut = values.getOrDefault("--ccr-out", result.ccrOut);
             result.buildSelector = values.getOrDefault("--build-selector", result.buildSelector);
             result.tckFolder = values.getOrDefault("--tck-folder", result.tckFolder);
             result.platformFolder = values.getOrDefault("--platform-folder", result.platformFolder);
@@ -2184,6 +2347,7 @@ public class JenkinsTckCertificationWorkflow {
             result.skipDiscover = Boolean.parseBoolean(values.getOrDefault("--skip-discover", "false"));
             result.skipInventory = Boolean.parseBoolean(values.getOrDefault("--skip-inventory", "false"));
             result.skipReport = Boolean.parseBoolean(values.getOrDefault("--skip-report", "false"));
+            result.skipCcr = Boolean.parseBoolean(values.getOrDefault("--skip-ccr", "false"));
             result.skipPlatform = Boolean.parseBoolean(values.getOrDefault("--skip-platform", "false"));
             result.skipComponents = Boolean.parseBoolean(values.getOrDefault("--skip-components", "false"));
             result.platformTitle = values.getOrDefault("--platform-title", result.platformTitle);
@@ -2234,7 +2398,8 @@ public class JenkinsTckCertificationWorkflow {
             System.out.println("  --jobs-base-url URL                base URL containing downstream jobs");
             System.out.println("  --skip-discover true|false         use existing overview JSON; default: false");
             System.out.println("  --skip-inventory true|false        use existing inventory JSON; default: false");
-            System.out.println("  --skip-report true|false           do not render Markdown; default: false");
+            System.out.println("  --skip-report true|false           do not render main report Markdown; default: false");
+            System.out.println("  --skip-ccr true|false              do not render CCR Markdown; default: false");
             System.out.println("  --build-selector NAME              lastCompletedBuild|lastSuccessfulBuild|lastBuild; default: lastCompletedBuild");
             System.out.println("  --threads N                        inventory fetch threads; default: 8");
             System.out.println("  --fetch-threads N                  report artifact fetch threads; default: --threads");
@@ -2245,6 +2410,7 @@ public class JenkinsTckCertificationWorkflow {
             System.out.println("  --inventory-json-out FILE          default: jenkins-tck-result-inventory.json");
             System.out.println("  --report-out FILE                  default: tck-report-sections.md");
             System.out.println("  --out FILE                         alias for --report-out");
+            System.out.println("  --ccr-out FILE                     default: ccr.md");
             System.out.println();
             System.out.println("Report options:");
             System.out.println("  --tck-folder NAME                  default: " + DEFAULT_TCK_FOLDER);
