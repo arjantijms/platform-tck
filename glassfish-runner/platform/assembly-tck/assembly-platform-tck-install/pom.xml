@@ -34,7 +34,7 @@
 
     <properties>
         <tck.test.assembly.file>jakartaeetck-${tck.test.assembly.version}.zip</tck.test.assembly.file>
-        <tck.test.assembly.url>https://download.eclipse.org/ee4j/jakartaee-platform/jakartaee11/staged/eftl/${tck.test.assembly.file}</tck.test.assembly.url>
+        <tck.test.assembly.url>https://download.eclipse.org/jakartaee/platform/11/${tck.test.assembly.file}</tck.test.assembly.url>
         
         <tck.test.assembly.version>11.0.3</tck.test.assembly.version>
     </properties>

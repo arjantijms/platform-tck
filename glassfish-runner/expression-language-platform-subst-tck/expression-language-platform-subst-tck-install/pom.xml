@@ -34,7 +34,7 @@
 
    <properties>
         <tck.test.expression-language-extra.file>jakartaeetck-${tck.test.expression-language-extra.version}.zip</tck.test.expression-language-extra.file>
-        <tck.test.expression-language-extra.url>https://download.eclipse.org/ee4j/jakartaee-platform/jakartaee11/staged/eftl/${tck.test.expression-language-extra.file}</tck.test.expression-language-extra.url>
+        <tck.test.expression-language-extra.url>https://download.eclipse.org/jakartaee/platform/11/${tck.test.expression-language-extra.file}</tck.test.expression-language-extra.url>
         <tck.test.expression-language-extra.version>11.0.3</tck.test.expression-language-extra.version>
     </properties>
 

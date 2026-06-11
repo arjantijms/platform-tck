@@ -34,7 +34,7 @@
 
    <properties>
         <tck.test.transactions.file>jakartaeetck-${tck.test.transactions.version}.zip</tck.test.transactions.file>
-        <tck.test.transactions.url>https://download.eclipse.org/ee4j/jakartaee-platform/jakartaee11/staged/eftl/${tck.test.transactions.file}</tck.test.transactions.url>
+        <tck.test.transactions.url>https://download.eclipse.org/jakartaee/platform/11/${tck.test.transactions.file}</tck.test.transactions.url>
         <tck.test.transactions.version>11.0.3</tck.test.transactions.version>
     </properties>
 
