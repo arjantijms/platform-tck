@@ -34,7 +34,7 @@
 
     <properties>
         <tck.test.integration.file>jakartaeetck-${tck.test.integration.version}.zip</tck.test.integration.file>
-        <tck.test.integration.url>https://download.eclipse.org/ee4j/jakartaee-platform/jakartaee11/staged/eftl/${tck.test.integration.file}</tck.test.integration.url>
+        <tck.test.integration.url>https://download.eclipse.org/jakartaee/platform/11/${tck.test.integration.file}</tck.test.integration.url>
         
         <tck.test.integration.version>11.0.3</tck.test.integration.version>
     </properties>

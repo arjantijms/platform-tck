@@ -34,7 +34,7 @@
 
    <properties>
         <tck.test.tags.file>jakartaeetck-${tck.test.tags.version}.zip</tck.test.tags.file>
-        <tck.test.tags.url>https://download.eclipse.org/ee4j/jakartaee-platform/jakartaee11/staged/eftl/${tck.test.tags.file}</tck.test.tags.url>
+        <tck.test.tags.url>https://download.eclipse.org/jakartaee/platform/11/${tck.test.tags.file}</tck.test.tags.url>
         <tck.test.tags.version>11.0.3</tck.test.tags.version>
     </properties>
 
