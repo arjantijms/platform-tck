@@ -32,9 +32,9 @@
    <name>TCK: Install Jakarta persistence Platform Tests</name>
 
    <properties>
+        <tck.test.persistence.version>11.0.3</tck.test.persistence.version>
         <tck.test.persistence.file>jakartaeetck-${tck.test.persistence.version}.zip</tck.test.persistence.file>
         <tck.test.persistence.url>https://download.eclipse.org/jakartaee/platform/11/${tck.test.persistence.file}</tck.test.persistence.url>
-        <tck.test.persistence.version>11.0.3</tck.test.persistence.version>
     </properties>
 
    <build>
