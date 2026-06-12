@@ -34,10 +34,9 @@
     <name>TCK: Install Jakarta JSON-B Extra TCK</name>
 
     <properties>
+        <tck.test.jsonb.version>11.0.3</tck.test.jsonb.version>
         <tck.test.jsonb.extra.file>jakartaeetck-${tck.test.jsonb.version}.zip</tck.test.jsonb.extra.file>
         <tck.test.jsonb.extra.url>https://download.eclipse.org/jakartaee/platform/11/${tck.test.jsonb.extra.file}</tck.test.jsonb.extra.url>
-        
-        <tck.test.jsonb.version>11.0.3</tck.test.jsonb.version>
     </properties>
 
     <build>
