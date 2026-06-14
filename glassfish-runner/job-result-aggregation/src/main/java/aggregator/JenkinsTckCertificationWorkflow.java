@@ -58,7 +58,7 @@ import org.xml.sax.InputSource;
 
 public class JenkinsTckCertificationWorkflow {
 
-    private static final String VERSION = "2026-06-10-ccr-single-java-runtime-line";
+    private static final String VERSION = "2026-06-10-profile-specific-results-url";
 
     private static final String DEFAULT_OVERVIEW_TREE = String.join(",",
             "name",
@@ -81,7 +81,12 @@ public class JenkinsTckCertificationWorkflow {
 
     private static final String DEFAULT_TCK_FOLDER = "JakartaEE-TCK/11/tck";
     private static final String DEFAULT_PLATFORM_FOLDER = "JakartaEE-TCK/11/tck/platform";
+    private static final String DEFAULT_CORE_PROFILE_FOLDER = "JakartaEE-TCK/11/tck/core-profile";
     private static final String DEFAULT_COMPONENT_KEY = "";
+
+    private static final String CERTIFICATION_PROFILE_AUTO = "auto";
+    private static final String CERTIFICATION_PROFILE_PLATFORM = "platform";
+    private static final String CERTIFICATION_PROFILE_CORE = "core";
     private static final List<String> DEFAULT_EXCLUDED_PLATFORM_JOB_PREFIXES = List.of("persistence/se-ee-");
 
     private static final List<AdditionalTckRequirement> ADDITIONAL_TCK_REQUIREMENTS = List.of(
@@ -107,11 +112,24 @@ public class JenkinsTckCertificationWorkflow {
             new AdditionalTckRequirement("jakarta-mail-tck-glassfish", "Jakarta Mail 2.1 TCK")
     );
 
+    private static final List<AdditionalTckRequirement> CORE_PROFILE_ADDITIONAL_TCK_REQUIREMENTS = List.of(
+            new AdditionalTckRequirement("jakarta-annotations-tck-glassfish", "Jakarta Annotations 3.0 TCK"),
+            new AdditionalTckRequirement("jakarta-cdi", "Jakarta Contexts and Dependency Injection 4.1 TCK"),
+            new AdditionalTckRequirement("jakarta-di-tck-glassfish", "Jakarta Dependency Injection 2.0 TCK"),
+            new AdditionalTckRequirement("jakarta-jsonb-tck-glassfish", "Jakarta JSON Binding 3.0 TCK"),
+            new AdditionalTckRequirement("jakarta-jsonp-tck-glassfish", "Jakarta JSON Processing 2.1 TCK"),
+            new AdditionalTckRequirement("jakarta-rest-tck-glassfish", "Jakarta RESTful Web Services 4.0 TCK")
+    );
+
     private static final String DEFAULT_PLATFORM_TITLE = "Jakarta Platform";
+    private static final String DEFAULT_CORE_PROFILE_TITLE = "Jakarta Core Profile";
     private static final String DEFAULT_PLATFORM_VERSION = "11.0";
     private static final String DEFAULT_PLATFORM_TCK_LINK_TEXT = "Jakarta EE Platform TCK 11.0";
+    private static final String DEFAULT_CORE_PROFILE_TCK_LINK_TEXT = "Jakarta EE Core Profile TCK 11.0";
     private static final String DEFAULT_PLATFORM_TCK_DOWNLOAD_LINK = "https://download.eclipse.org/ee4j/jakartaee-tck/jakartaee11/staged/eftl/jakartaeetck-11.0.0-dist.zip";
     private static final String DEFAULT_PLATFORM_TCK_SHA = "b2c0ad6db0514b75ff612dd7d855a3976c8ae9f240a3b690a684f61bf503bead";
+    private static final String DEFAULT_CORE_PROFILE_TCK_DOWNLOAD_LINK = "UNKNOWN";
+    private static final String DEFAULT_CORE_PROFILE_TCK_SHA = "UNKNOWN";
 
     private static final String NL = System.lineSeparator();
     private static final char QUOTE = (char) 34;
@@ -211,6 +229,7 @@ public class JenkinsTckCertificationWorkflow {
 
         System.out.println("TCK folder: " + arguments.tckFolder);
         System.out.println("Platform folder: " + arguments.platformFolder);
+        System.out.println("Certification profile: " + arguments.effectiveCertificationProfile());
         System.out.println("Platform jobs generated: " + (arguments.skipPlatform ? 0 : platformJobs.size()));
         System.out.println("Component key: " + (arguments.componentKey.isBlank() ? "<all>" : arguments.componentKey));
         System.out.println("Component groups generated: " + (arguments.skipComponents ? 0 : componentGroups.size()));
@@ -741,14 +760,17 @@ public class JenkinsTckCertificationWorkflow {
 
     private static void appendCertificationHeader(StringBuilder markdown, ReportMetadata metadata, Arguments arguments) {
         String productVersion = metadata.productVersion();
+        String specificationName = certificationSpecificationName(arguments);
+        String resultProfileName = certificationResultProfileName(arguments);
         markdown.append("TCK Results").append(NL);
         markdown.append("===========").append(NL).append(NL).append(NL);
         markdown.append("As required by the").append(NL);
         markdown.append("[Eclipse Foundation Technology Compatibility Kit License](https://www.eclipse.org/legal/tck.php),").append(NL);
-        markdown.append("following is a summary of the TCK results for releases of Jakarta EE Platform ")
+        markdown.append("following is a summary of the TCK results for releases of ")
+                .append(specificationName).append(' ')
                 .append(arguments.platformVersion).append(", certification summary.").append(NL).append(NL);
 
-        markdown.append("# Jakarta EE Platform ").append(arguments.platformVersion)
+        markdown.append("# ").append(specificationName).append(' ').append(arguments.platformVersion)
                 .append(", Eclipse GlassFish ").append(productVersion == null ? "UNKNOWN" : productVersion)
                 .append(", TCK Certification Summary").append(NL).append(NL);
 
@@ -788,33 +810,34 @@ public class JenkinsTckCertificationWorkflow {
 
         PlatformTckMetadata platformTck = metadata.platformTckMetadataOrDefault(arguments);
         markdown.append("- [X] TCK Version, digital SHA-256 fingerprint and download URL:").append(NL);
-        markdown.append("  [Jakarta EE Platform TCK ").append(platformTck.tckVersion()).append("](")
+        markdown.append("  [").append(certificationTckName(arguments)).append(' ').append(platformTck.tckVersion()).append("](")
                 .append(platformTck.tckDownloadLink()).append(")").append(NL);
         markdown.append("  SHA-256: `").append(platformTck.tckSha()).append("` <br/><br/> ").append(NL).append(NL);
 
         String publicResultVersion = productVersion == null || productVersion.isBlank() ? "UNKNOWN" : productVersion;
         markdown.append("- [X] Public URL of TCK Results Summary:").append(NL);
-        markdown.append("  [Eclipse GlassFish Platform ").append(publicResultVersion).append(" TCK Results](")
-                .append(glassFishCertificationResultsUrl(publicResultVersion))
+        markdown.append("  [Eclipse GlassFish ").append(resultProfileName).append(' ').append(publicResultVersion).append(" TCK Results](")
+                .append(glassFishCertificationResultsUrl(arguments, publicResultVersion))
                 .append(") <br/><br/>")
                 .append(NL).append(NL);
 
-        appendAdditionalSpecificationRequirements(markdown, metadata);
+        appendAdditionalSpecificationRequirements(markdown, metadata, arguments);
     }
 
     private static void appendSpecificationName(StringBuilder markdown, Arguments arguments) {
         markdown.append("- [X] Specification Name, Version and download URL:").append(NL);
-        markdown.append("  [Jakarta EE Platform ")
+        markdown.append("  [").append(certificationSpecificationName(arguments)).append(' ')
                 .append(platformSpecificationDisplayVersion(arguments.platformVersion))
-                .append("](https://jakarta.ee/specifications/platform/")
+                .append("](https://jakarta.ee/specifications/")
+                .append(certificationSpecificationUrlSegment(arguments)).append('/')
                 .append(platformSpecificationUrlVersion(arguments.platformVersion))
                 .append(") <br/><br/>")
                 .append(NL);
     }
 
-    private static void appendAdditionalSpecificationRequirements(StringBuilder markdown, ReportMetadata metadata) {
+    private static void appendAdditionalSpecificationRequirements(StringBuilder markdown, ReportMetadata metadata, Arguments arguments) {
         markdown.append("- [X] Any Additional Specification Certification Requirements:").append(NL).append(NL);
-        for (AdditionalTckRequirement requirement : ADDITIONAL_TCK_REQUIREMENTS) {
+        for (AdditionalTckRequirement requirement : additionalTckRequirements(arguments)) {
             String downloadLink = metadata.componentTckDownloadLinksByKey.get(requirement.componentKey());
             markdown.append("     - [")
                     .append(requirement.label())
@@ -885,23 +908,24 @@ public class JenkinsTckCertificationWorkflow {
         }
 
         markdown.append("- [x] Specification Name, Version and download URL:<br/>").append(NL);
-        markdown.append("  [Jakarta EE Platform, ")
+        markdown.append("  [").append(certificationSpecificationName(arguments)).append(", ")
                 .append(platformSpecificationDisplayVersion(arguments.platformVersion))
-                .append("](https://jakarta.ee/specifications/platform/")
+                .append("](https://jakarta.ee/specifications/")
+                .append(certificationSpecificationUrlSegment(arguments)).append('/')
                 .append(platformSpecificationUrlVersion(arguments.platformVersion))
                 .append(")").append(NL);
 
         markdown.append("- [x] TCK Version, digital SHA-256 fingerprint and download URL:<br/>").append(NL);
-        markdown.append("  [Jakarta EE Platform TCK ").append(platformTck.tckVersion()).append("](")
+        markdown.append("  [").append(certificationTckName(arguments)).append(' ').append(platformTck.tckVersion()).append("](")
                 .append(platformTck.tckDownloadLink()).append("),  ").append(NL);
         markdown.append("  `").append(platformTck.tckSha()).append('`').append(NL);
 
         markdown.append("- [x] Public URL of TCK Results Summary:<br/>").append(NL);
-        markdown.append("  [Eclipse GlassFish Platform ").append(publicResultVersion)
-                .append(" TCK Results](").append(glassFishCertificationResultsUrl(publicResultVersion)).append(")").append(NL);
+        markdown.append("  [Eclipse GlassFish ").append(certificationResultProfileName(arguments)).append(' ').append(publicResultVersion)
+                .append(" TCK Results](").append(glassFishCertificationResultsUrl(arguments, publicResultVersion)).append(")").append(NL);
 
         markdown.append("- [x] Any Additional Specification Certification Requirements:<br/>").append(NL);
-        for (AdditionalTckRequirement requirement : ADDITIONAL_TCK_REQUIREMENTS) {
+        for (AdditionalTckRequirement requirement : additionalTckRequirements(arguments)) {
             ComponentTckMetadata component = metadata.componentTckMetadataByKey.get(requirement.componentKey());
             String downloadLink = component == null || component.tckDownloadLink() == null || component.tckDownloadLink().isBlank()
                     ? "UNKNOWN" : component.tckDownloadLink();
@@ -982,6 +1006,30 @@ public class JenkinsTckCertificationWorkflow {
         }
     }
 
+    private static List<AdditionalTckRequirement> additionalTckRequirements(Arguments arguments) {
+        return isCoreProfile(arguments) ? CORE_PROFILE_ADDITIONAL_TCK_REQUIREMENTS : ADDITIONAL_TCK_REQUIREMENTS;
+    }
+
+    private static boolean isCoreProfile(Arguments arguments) {
+        return CERTIFICATION_PROFILE_CORE.equals(arguments.effectiveCertificationProfile());
+    }
+
+    private static String certificationSpecificationName(Arguments arguments) {
+        return isCoreProfile(arguments) ? "Jakarta EE Core Profile" : "Jakarta EE Platform";
+    }
+
+    private static String certificationTckName(Arguments arguments) {
+        return certificationSpecificationName(arguments) + " TCK";
+    }
+
+    private static String certificationSpecificationUrlSegment(Arguments arguments) {
+        return isCoreProfile(arguments) ? "coreprofile" : "platform";
+    }
+
+    private static String certificationResultProfileName(Arguments arguments) {
+        return isCoreProfile(arguments) ? "Core Profile" : "Platform";
+    }
+
     private static String platformSpecificationDisplayVersion(String platformVersion) {
         if (platformVersion == null || platformVersion.isBlank()) {
             return "11";
@@ -997,7 +1045,7 @@ public class JenkinsTckCertificationWorkflow {
     private static void appendPlatformHeader(StringBuilder markdown, Arguments arguments, ReportMetadata metadata) {
         PlatformTckMetadata platformTck = metadata.platformTckMetadataOrDefault(arguments);
         markdown.append("## ").append(arguments.platformTitle).append(' ').append(arguments.platformVersion).append(NL).append(NL);
-        markdown.append("   - [Jakarta EE Platform TCK ").append(platformTck.tckVersion()).append("]")
+        markdown.append("   - [").append(certificationTckName(arguments)).append(' ').append(platformTck.tckVersion()).append("]")
                 .append('(').append(platformTck.tckDownloadLink()).append("),")
                 .append(NL).append("  SHA-256: `").append(platformTck.tckSha()).append("` <br/> ")
                 .append(NL).append(NL).append(NL);
@@ -1419,9 +1467,10 @@ public class JenkinsTckCertificationWorkflow {
         return lastSpace >= 0 ? linkText.substring(lastSpace + 1).strip() : linkText.strip();
     }
 
-    private static String glassFishCertificationResultsUrl(String productVersion) {
+    private static String glassFishCertificationResultsUrl(Arguments arguments, String productVersion) {
         String version = productVersion == null || productVersion.isBlank() ? "UNKNOWN" : productVersion.strip();
-        return "https://glassfish.org/certifications/jakarta-platform/11/TCK-Results-" + version + ".html";
+        String profilePath = isCoreProfile(arguments) ? "jakarta-core-profile" : "jakarta-platform";
+        return "https://glassfish.org/certifications/" + profilePath + "/11/TCK-Results-" + version + ".html";
     }
 
     private static String glassFishVersionFromDownloadLink(String downloadLink) {
@@ -2302,6 +2351,7 @@ public class JenkinsTckCertificationWorkflow {
         String tckFolder = DEFAULT_TCK_FOLDER;
         String platformFolder = DEFAULT_PLATFORM_FOLDER;
         String componentKey = DEFAULT_COMPONENT_KEY;
+        String certificationProfile = CERTIFICATION_PROFILE_AUTO;
         String user = System.getenv("JENKINS_USER");
         String token = System.getenv("JENKINS_TOKEN");
         int timeoutSeconds = 30;
@@ -2355,11 +2405,17 @@ public class JenkinsTckCertificationWorkflow {
             result.platformTckLinkText = values.getOrDefault("--platform-tck-link-text", result.platformTckLinkText);
             result.platformTckDownloadLink = values.getOrDefault("--platform-tck-download-link", result.platformTckDownloadLink);
             result.platformTckSha = values.getOrDefault("--platform-tck-sha", result.platformTckSha);
+            result.certificationProfile = values.getOrDefault("--certification-profile", result.certificationProfile);
+
+            result.applyCertificationProfileDefaults(values);
 
             if (result.threads < 1) { throw new IllegalArgumentException("--threads must be >= 1"); }
             if (result.fetchThreads < 1) { throw new IllegalArgumentException("--fetch-threads must be >= 1"); }
             if (!List.of("lastCompletedBuild", "lastSuccessfulBuild", "lastBuild").contains(result.buildSelector)) {
                 throw new IllegalArgumentException("--build-selector must be lastCompletedBuild, lastSuccessfulBuild, or lastBuild");
+            }
+            if (!List.of(CERTIFICATION_PROFILE_AUTO, CERTIFICATION_PROFILE_PLATFORM, CERTIFICATION_PROFILE_CORE).contains(result.certificationProfile)) {
+                throw new IllegalArgumentException("--certification-profile must be auto, platform, or core");
             }
             if (!result.skipDiscover && result.configFile == null && result.aggregatorUrl == null) {
                 throw new IllegalArgumentException("Either --aggregator-url or --config-file is required unless --skip-discover true");
@@ -2372,6 +2428,39 @@ public class JenkinsTckCertificationWorkflow {
             }
             return result;
         }
+        private void applyCertificationProfileDefaults(Map<String, String> values) {
+            if (!CERTIFICATION_PROFILE_CORE.equals(effectiveCertificationProfile())) {
+                return;
+            }
+            if (!values.containsKey("--platform-folder")) {
+                platformFolder = DEFAULT_CORE_PROFILE_FOLDER;
+            }
+            if (!values.containsKey("--platform-title")) {
+                platformTitle = DEFAULT_CORE_PROFILE_TITLE;
+            }
+            if (!values.containsKey("--platform-tck-link-text")) {
+                platformTckLinkText = DEFAULT_CORE_PROFILE_TCK_LINK_TEXT;
+            }
+            if (!values.containsKey("--platform-tck-download-link")) {
+                platformTckDownloadLink = DEFAULT_CORE_PROFILE_TCK_DOWNLOAD_LINK;
+            }
+            if (!values.containsKey("--platform-tck-sha")) {
+                platformTckSha = DEFAULT_CORE_PROFILE_TCK_SHA;
+            }
+        }
+
+        String effectiveCertificationProfile() {
+            if (CERTIFICATION_PROFILE_CORE.equals(certificationProfile) || CERTIFICATION_PROFILE_PLATFORM.equals(certificationProfile)) {
+                return certificationProfile;
+            }
+            String url = aggregatorUrl == null ? "" : aggregatorUrl.toLowerCase();
+            String folder = normalizePath(platformFolder).toLowerCase();
+            if (url.contains("run-core") || folder.endsWith("/core-profile") || folder.equals("core-profile")) {
+                return CERTIFICATION_PROFILE_CORE;
+            }
+            return CERTIFICATION_PROFILE_PLATFORM;
+        }
+
         private static Map<String, String> parseOptions(String[] args) {
             Map<String, String> result = new LinkedHashMap<>();
             for (int i = 0; i < args.length; i++) {
@@ -2414,8 +2503,9 @@ public class JenkinsTckCertificationWorkflow {
             System.out.println();
             System.out.println("Report options:");
             System.out.println("  --tck-folder NAME                  default: " + DEFAULT_TCK_FOLDER);
-            System.out.println("  --platform-folder NAME             default: " + DEFAULT_PLATFORM_FOLDER);
+            System.out.println("  --platform-folder NAME             default: " + DEFAULT_PLATFORM_FOLDER + "; core profile auto-default: " + DEFAULT_CORE_PROFILE_FOLDER);
             System.out.println("  --component-key NAME               optional top-level component filter; default: all components");
+            System.out.println("  --certification-profile NAME       auto|platform|core; default: auto");
             System.out.println("  --skip-platform true|false         default: false");
             System.out.println("  --skip-components true|false       default: false");
             System.out.println("  --user USER                        Jenkins user; defaults to JENKINS_USER");
