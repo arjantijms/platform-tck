@@ -38,15 +38,17 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         
         <glassfish.root>${project.build.directory}</glassfish.root>
-        <glassfish.version>9.0.0-SNAPSHOT</glassfish.version>
+        <glassfish.version>8.0.3</glassfish.version>
         
-        <arquillian.glassfish.version>2.2.1-SNAPSHOT</arquillian.glassfish.version>
+        <arquillian.glassfish.version>2.2.1</arquillian.glassfish.version>
+        
+        <T>4</T>
         
         <!-- GlassFish pool configuration -->
-        <gf.pool.size>1</gf.pool.size>
+        <gf.pool.size>${T}</gf.pool.size>
         <gf.pool.dir>${project.build.directory}/pool</gf.pool.dir>
         <gf.pool.dist>${project.build.directory}/dist</gf.pool.dist>
-        <gf.pool.source>${gf.pool.dist}/glassfish9</gf.pool.source>
+        <gf.pool.source>${gf.pool.dist}/glassfish</gf.pool.source>
         <gf.pool.adminBase>14848</gf.pool.adminBase>
         <gf.pool.portStride>100</gf.pool.portStride>
         <gf.pool.unpack.skip>false</gf.pool.unpack.skip>
@@ -184,7 +186,7 @@
                     <version>${arquillian.glassfish.version}</version>
                     <configuration>
                         <poolDir>${gf.pool.dir}</poolDir>
-                        <poolSource>${gf.pool.source}</poolSource>
+                        <poolSource>${gf.pool.source}${glassfish.version.majorVersion}</poolSource>
                         <poolSize>${gf.pool.size}</poolSize>
                         <adminPortBase>${gf.pool.adminBase}</adminPortBase>
                         <portStride>${gf.pool.portStride}</portStride>
@@ -202,6 +204,24 @@
         </pluginManagement>
         
         <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>parse-glassfish-version</id>
+                        <goals>
+                            <goal>parse-version</goal>
+                        </goals>
+                        <configuration>
+                            <versionString>${glassfish.version}</versionString>
+                            <propertyPrefix>glassfish.version</propertyPrefix>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.0</version>
@@ -252,7 +272,7 @@
                         <configuration>
                             <file>${project.build.testOutputDirectory}/certificates/cts_cert</file>
                             <alias>cts</alias>
-                            <keystore>${gf.pool.source}/glassfish/domains/domain1/config/cacerts.p12</keystore>
+                            <keystore>${gf.pool.source}${glassfish.version.majorVersion}/glassfish/domains/domain1/config/cacerts.p12</keystore>
                             <storepass>changeit</storepass>
                             <keypass>changeit</keypass>
                             <noprompt>true</noprompt>
@@ -296,8 +316,14 @@
                     </argLine>
 
                     <dependenciesToScan>
-                        <dependenciesToScan>jakarta.tck:servlet-tck-runtime</dependenciesToScan>
+                        <dependency>jakarta.tck:servlet-tck-runtime</dependency>
                     </dependenciesToScan>
+                    
+                    <forkCount>${T}</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <runOrder>balanced</runOrder>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <rerunFailingTestsCount>2</rerunFailingTestsCount>
 
                     <systemProperties>
                         <!--
@@ -308,7 +334,7 @@
                             leaser falls back to waiting on an existing slot.
                         -->
                         <gf.pool.dir>${gf.pool.dir}</gf.pool.dir>
-                        <gf.pool.source>${gf.pool.source}</gf.pool.source>
+                        <gf.pool.source>${gf.pool.source}${glassfish.version.majorVersion}</gf.pool.source>
                         <gf.pool.adminBase>${gf.pool.adminBase}</gf.pool.adminBase>
                         <gf.pool.portStride>${gf.pool.portStride}</gf.pool.portStride>
                         <gf.pool.restartOnRelease>${gf.pool.restartOnRelease}</gf.pool.restartOnRelease>
@@ -317,7 +343,7 @@
 
                         <javax.net.ssl.keyStore>${project.build.testOutputDirectory}/certificates/clientcert.jks</javax.net.ssl.keyStore>
                         <javax.net.ssl.keyStorePassword>changeit</javax.net.ssl.keyStorePassword>
-                        <javax.net.ssl.trustStore>${gf.pool.source}/glassfish/domains/domain1/config/cacerts.p12</javax.net.ssl.trustStore>
+                        <javax.net.ssl.trustStore>${gf.pool.source}${glassfish.version.majorVersion}/glassfish/domains/domain1/config/cacerts.p12</javax.net.ssl.trustStore>
                         <javax.net.ssl.trustStorePassword>changeit</javax.net.ssl.trustStorePassword>
 
                         <!-- Uncomment to debug client-side SSL
@@ -349,7 +375,7 @@
 
                         <!-- Set the properties for the API signature test -->
                         <jimage.dir>${project.build.directory}/jdk-bundle</jimage.dir>
-                        <sigTestClasspath>${gf.pool.source}/glassfish/modules/jakarta.servlet-api.jar:${project.build.directory}/jdk-bundle/java.base:${project.build.directory}/jdk-bundle/java.rmi:${project.build.directory}/jdk-bundle/java.sql:${project.build.directory}/jdk-bundle/java.naming</sigTestClasspath>
+                        <sigTestClasspath>${gf.pool.source}${glassfish.version.majorVersion}/glassfish/modules/jakarta.servlet-api.jar:${project.build.directory}/jdk-bundle/java.base:${project.build.directory}/jdk-bundle/java.rmi:${project.build.directory}/jdk-bundle/java.sql:${project.build.directory}/jdk-bundle/java.naming</sigTestClasspath>
                     </systemProperties>
                 </configuration>
             </plugin>
